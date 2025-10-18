@@ -388,17 +388,17 @@
         let field, qText, sub, answer;
         if(state.mode === 'meaning'){
           field = 'meaning';
-          qText = `What's the meaning of ${q.word} (${q.reading}) ?`;
+          qText = `What's the meaning of<br>${q.word} (${q.reading}) ?`;
           sub = '';
           answer = q.meaning;
         }else if(state.mode === 'reading'){
           field = 'reading';
-          qText = `What's the reading of ${q.word} (${q.meaning}) ?`;
+          qText = `What's the reading of<br>${q.word} (${q.meaning}) ?`;
           sub = '';
           answer = q.reading;
         }else{ // kanji
           field = 'word';
-          qText = `What's the kanji for ${q.meaning} (${q.reading}) ?`;
+          qText = `What's the kanji for<br>${q.meaning} (${q.reading}) ?`;
           sub = '';
           answer = q.word;
         }
@@ -424,15 +424,15 @@
       // Build question with color highlight
       let html = "";
       if(state.mode === 'meaning'){
-        html = `What's the meaning of 
+        html = `What's the meaning of <br>
           <span class="q-word">${q.word}</span> 
           <span class="q-subword">(${q.reading})</span> ?`;
       }else if(state.mode === 'reading'){
-        html = `What's the reading of 
+        html = `What's the reading of <br>
           <span class="q-word">${q.word}</span> 
           <span class="q-subword">(${q.meaning})</span> ?`;
       }else{
-        html = `What's the kanji for 
+        html = `What's the kanji for <br>
           <span class="q-word">${q.meaning}</span> 
           <span class="q-subword">(${q.reading})</span> ?`;
       }
@@ -572,4 +572,3 @@
   </script>
 </body>
 </html>
-
