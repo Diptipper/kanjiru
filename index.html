@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script src="data/J5.js"></script>
+  <script src="data/K5.js"></script>
+  <script src="data/J4.js"></script>
+  <script src="data/K4.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kanjiru – JLPT Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #0b0d12;
+      --panel: #121722;
+      --muted: #7781a1;
+      --text: #e8ecf6;
+      --brand: #7c5cff;
+      --brand-2: #2dd4bf;
+      --good: #22c55e; /* green */
+      --bad: #ef4444; /* red */
+      --ring: 0 0 0 3px rgba(124,92,255,.25);
+      --shadow: 0 10px 30px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.3);
+      --radius: 16px;
+    }
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
+    body{
+      margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(124,92,255,.25), transparent 60%),
+                  radial-gradient(1200px 800px at 90% 0%, rgba(45,212,191,.20), transparent 65%),
+                  var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    .wrap{ max-width:800px; margin:0 auto; padding:28px 20px 64px }
+
+    header{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;
+    }
+    .brand{ display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.2px; }
+    .logo{
+      width:36px; height:36px; border-radius:12px; display:grid; place-items:center;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: var(--shadow);
+      font-weight:800; color:white;
+    }
+    .panel{ background:linear-gradient(180deg, rgba(255,255,255,.03), transparent 60%), var(--panel);
+      border:1px solid rgba(255,255,255,.06); border-radius:var(--radius); box-shadow:var(--shadow);
+    }
+    .setup-panel,
+    .quiz-panel {
+      width: 100%;
+      max-width: 700px;   /* you can adjust this (600–800px works well) */
+      margin: 0 auto 20px auto;  /* center + spacing below */
+    }
+
+    .q-word {
+      font-weight: 800;
+      color: var(--brand-2); /* teal accent or choose brand */
+    }
+
+    .q-subword {
+      font-weight: 700;
+      color: var(--brand); /* purple accent */
+      opacity: 0.9;
+    }
+    .card{ padding:20px 20px }
+    .title{ font-size:22px; font-weight:800; margin:2px 0 8px }
+    .muted{ color:var(--muted); font-size:14px }
+
+    .controls{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px }
+    .controls .row{ display:flex; flex-direction:column; gap:8px }
+    label{ font-size:14px; color:var(--muted) }
+    input[type="number"], select{
+      width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.1);
+      background:#0e1320; color:var(--text); outline:none; transition:.2s border, .2s box-shadow;
+    }
+    input[type="number"]:focus, select:focus{ border-color: rgba(124,92,255,.7); box-shadow: var(--ring) }
+
+    .segmented{ display:flex; background:#0e1320; border:1px solid rgba(255,255,255,.1); padding:6px; border-radius:12px; gap:6px }
+    .segmented button{ flex:1; padding:10px 12px; border-radius:8px; border:0; background:transparent; color:var(--muted); font-weight:600; cursor:pointer }
+    .segmented button.active{ background:linear-gradient(180deg, rgba(124,92,255,.15), rgba(124,92,255,.08)); color:var(--text) }
+
+    .actions{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap }
+    .btn{
+      padding:12px 16px; border-radius:12px; border:0; font-weight:700; letter-spacing:.25px; cursor:pointer;
+      transition: transform .06s ease, box-shadow .2s ease, background .15s ease; white-space:nowrap;
+    }
+    .btn:active{ transform: translateY(1px) }
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(124,92,255,.9), rgba(124,92,255,.8)); color:white; box-shadow: var(--shadow);
+    }
+    .btn.secondary{ background:#0e1320; color:var(--text); border:1px solid rgba(255,255,255,.12) }
+
+    .quiz{
+      padding:24px 22px 26px; display:none;
+    }
+    .quiz.active{ display:block }
+    .q-top{ display:flex; align-items:center; justify-content:space-between; gap:10px }
+    .pill{ font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); color:var(--muted) }
+
+    .progress{ width:100%; height:10px; background:#0e1320; border:1px solid rgba(255,255,255,.08); border-radius:999px; margin:12px 0 18px; overflow:hidden }
+    .bar{ height:100%; width:0%; background: linear-gradient(90deg, var(--brand), var(--brand-2)); transition: width .35s ease }
+
+    .q-card{ padding:18px; border-radius:14px; border:1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.02) }
+    .question{ font-size:20px; font-weight:800; margin:0 0 8px }
+    .sub{ font-size:14px; color:var(--muted); margin-bottom:14px }
+
+    .choices{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px }
+    @media (max-width: 700px){ .choices{ grid-template-columns: 1fr } }
+
+    .choice{
+      padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:#0e1320;
+      text-align:left; font-weight:600; color:var(--text); cursor:pointer; transition: .2s border, .2s transform, .2s background;
+    }
+    .choice:hover{ border-color: rgba(124,92,255,.6) }
+    .choice.correct{ border-color: rgba(34,197,94,.9); background: rgba(34,197,94,.08) }
+    .choice.wrong{ border-color: rgba(239,68,68,.8); background: rgba(239,68,68,.08) }
+
+    .feedback{ margin-top:8px; font-weight:700 }
+    .feedback.good{ color: var(--good) }
+    .feedback.bad{ color: var(--bad) }
+
+    .footer-actions{ display:flex; justify-content:space-between; align-items:center; margin-top:16px }
+
+    .results{ display:none; padding:22px }
+    .results.active{ display:block }
+    .score{
+      font-size:48px; font-weight:800; line-height:1; background: linear-gradient(180deg, #fff, #cfe2ff); -webkit-background-clip:text; color:transparent;
+    }
+    .result-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:16px }
+    @media (max-width: 700px){ .result-grid{ grid-template-columns: 1fr } }
+    .mini{ padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:#0e1320 }
+
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; padding:2px 6px; border-radius:6px; border:1px solid rgba(255,255,255,.15); background:#0e1320; color:var(--muted) }
+
+    .hint{ font-size:12px; color:var(--muted) }
+  </style>
+</head>
+<body>
+  <!--
+    🔧 How to provide your data:
+    Include your existing data files before this script (keep this HTML as is) e.g.
+
+    <script src="data/J5.js"></script>
+    <script src="data/K5.js"></script>
+    <script src="data/J4.js"></script>
+    <script src="data/K4.js"></script>
+
+    Each file should define a template-string like:
+      window.J5 = `
+      食べる たべる to eat
+      飲む のむ to drink
+      `
+      window.K5 = `
+      食 飲 会 話 使 読 書 学
+      `
+  -->
+
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">漢字</div>
+        <div>
+          <div class="title" style="margin:0">Kanjiru - JLPT Practice</div>
+          <div class="muted">Vocab & readings practice - <i>by Diptip</i></div>
+        </div>
+      </div>
+      <div class="pill" id="dataStatus">Looking for data…</div>
+    </header>
+
+    <section class="panel card setup-panel">
+        <div class="title">Setup</div>
+        <div class="muted">Pick a level, mode, and how many questions you want. Press <b>Start</b>.</div>
+
+        <div class="controls">
+          <div class="row">
+            <label for="level">JLPT Level</label>
+            <select id="level">
+              <option value="5">N5</option>
+              <option value="4">N4</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="mode">Mode</label>
+            <div class="segmented" id="mode">
+              <button data-mode="meaning" class="active">Meaning</button>
+              <button data-mode="reading">Reading</button>
+              <button data-mode="kanji">Kanji</button>
+            </div>
+          </div>
+          <div class="row">
+            <label for="num">Questions per session</label>
+            <input id="num" type="number" min="1" max="100" step="1" value="10">
+          </div>
+          <div class="row">
+            <label>Shortcuts (PC)</label>
+            <div class="mini"><span class="kbd">1-4</span> pick choice &nbsp;·&nbsp; <span class="kbd">Enter</span> next</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="startBtn">Start</button>
+          <button class="btn secondary" id="resetBtn">Reset</button>
+          <div class="hint" id="hint"></div>
+        </div>
+    </section>
+    <section class="panel quiz-panel">
+        <div class="quiz" id="quiz">
+          <div class="q-top">
+            <div class="pill" id="modePill">Mode: Meaning</div>
+            <div class="muted" id="counter">0 / 0</div>
+          </div>
+          <div class="progress"><div class="bar" id="bar"></div></div>
+
+          <div class="q-card">
+            <div class="question" id="qText">Press Start to begin</div>
+            <div class="sub" id="qSub"></div>
+            <div class="choices" id="choices"></div>
+            <div class="feedback" id="feedback"></div>
+            <div class="footer-actions">
+              <div></div>
+              <button class="btn primary" id="nextBtn" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+        <div class="results" id="results">
+          <div class="title">Session results</div>
+          <div class="score" id="score">—</div>
+          <div class="result-grid">
+            <div class="mini" id="breakdown">—</div>
+            <div class="mini" id="summary">—</div>
+          </div>
+          <div class="actions" style="margin-top:18px">
+            <button class="btn primary" id="againBtn">Run it again</button>
+            <button class="btn secondary" id="reviewBtn">Review mistakes</button>
+          </div>
+        </div>
+    </section>
+  </div>
+
+  <script>
+    // ========= Data Loading & Parsing =========
+    const available_levels = [5,4];
+    const available_modes = ["meaning","reading","kanji"];
+
+    function textLines(str){
+      return (str||"").replace(/\r/g, "").split("\n").map(s=>s.trim()).filter(Boolean);
+    }
+
+    function parseJ(level){
+      const s = window["J"+level];
+      if(!s) return [];
+      const out = [];
+      for(const line of textLines(s)){
+        const bits = line.split(/\s+/);
+        if(bits.length < 3) continue;
+        const word = bits[0];
+        const reading = bits[1];
+        const meaning = bits.slice(2).join(" ");
+        out.push({word, reading, meaning});
+      }
+      return out;
+    }
+
+    function parseK(level){
+      const s = window["K"+level];
+      if(!s) return [];
+      return textLines(s).join(" ").split(/\s+/).filter(Boolean);
+    }
+
+    const JN = {}; const KN = {};
+    let dataReady = false;
+    function loadAll(){
+      for(const L of available_levels){
+        JN[L] = parseJ(L);
+        KN[L] = parseK(L);
+      }
+      dataReady = available_levels.some(L => (JN[L] && JN[L].length));
+      const pill = document.getElementById('dataStatus');
+      if(dataReady){
+        pill.textContent = 'Data loaded'; pill.style.color = '#bde5ff';
+      }else{
+        pill.textContent = 'No data detected'; pill.style.color = '#ffb4b4';
+        document.getElementById('hint').innerHTML = 'Tip: include <code>data/J5.js</code>, <code>data/K5.js</code>, etc. See comment in the HTML.';
+      }
+    }
+
+    // Fallback demo data so the UI works out-of-the-box
+    if(!window.J5){
+      window.J5 = ``;
+    }
+
+    // ========= State =========
+    const state = {
+      level: Number(localStorage.getItem('jp.level')) || 5,
+      mode: localStorage.getItem('jp.mode') || 'meaning',
+      questions: Number(localStorage.getItem('jp.questions')) || 10,
+      idx: 0,
+      set: [], // questions array
+      choices: [], // array of arrays
+      answers: [], // strings
+      picked: [], // indexes picked 0..3 or -1
+      correct: 0,
+      review: [] // indices answered wrong
+    };
+
+    // ========= Utilities =========
+    function sample(arr, n){
+      const a = arr.slice();
+      for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] }
+      return a.slice(0, Math.max(0, Math.min(n, a.length)));
+    }
+
+    function unique(arr){ return Array.from(new Set(arr)); }
+
+    function buildChoices(allQ, field, answerVal){
+      // Prefer distractors from the same session set; backfill from full level pool if needed
+      const fromSet = unique(allQ.map(q=>q[field]).filter(v=>v!==answerVal));
+      let pool = sample(fromSet, 3);
+      if(pool.length < 3){
+        const full = unique(JN[state.level].map(q=>q[field]).filter(v=>v!==answerVal && !pool.includes(v)));
+        pool = pool.concat(sample(full, 3 - pool.length));
+      }
+      const opts = sample([answerVal, ...pool], 4); // shuffle and cap at 4
+      // Guarantee answer is present
+      if(!opts.includes(answerVal)) opts[0] = answerVal;
+      // Shuffle again lightly
+      return sample(opts, 4);
+    }
+
+    function setModePill(){
+      const map = {meaning:'Meaning', reading:'Reading', kanji:'Kanji'};
+      document.getElementById('modePill').textContent = `Mode: ${map[state.mode]}`;
+    }
+
+    // ========= Rendering =========
+    const els = {
+      level: document.getElementById('level'),
+      num: document.getElementById('num'),
+      modeSeg: document.getElementById('mode'),
+      start: document.getElementById('startBtn'),
+      reset: document.getElementById('resetBtn'),
+      quiz: document.getElementById('quiz'),
+      results: document.getElementById('results'),
+      qText: document.getElementById('qText'),
+      qSub: document.getElementById('qSub'),
+      choices: document.getElementById('choices'),
+      bar: document.getElementById('bar'),
+      counter: document.getElementById('counter'),
+      feedback: document.getElementById('feedback'),
+      next: document.getElementById('nextBtn'),
+      again: document.getElementById('againBtn'),
+      review: document.getElementById('reviewBtn'),
+      score: document.getElementById('score'),
+      breakdown: document.getElementById('breakdown'),
+      summary: document.getElementById('summary'),
+      hint: document.getElementById('hint')
+    };
+
+    function syncControlsFromState(){
+      els.level.value = String(state.level);
+      els.num.value = String(state.questions);
+      for(const b of els.modeSeg.querySelectorAll('button')){
+        b.classList.toggle('active', b.dataset.mode === state.mode);
+      }
+      setModePill();
+    }
+
+    function storeSettings(){
+      localStorage.setItem('jp.level', state.level);
+      localStorage.setItem('jp.mode', state.mode);
+      localStorage.setItem('jp.questions', state.questions);
+    }
+
+    function startQuiz(){
+      if(!dataReady){ loadAll(); }
+      const pool = JN[state.level] || [];
+      if(!pool.length){ alert('No data for this level. Make sure data/J'+state.level+'.js is loaded.'); return; }
+      state.idx = 0; state.correct = 0; state.picked = []; state.review = [];
+      state.set = sample(pool, state.questions);
+      state.choices = []; state.answers = [];
+
+      for(const q of state.set){
+        let field, qText, sub, answer;
+        if(state.mode === 'meaning'){
+          field = 'meaning';
+          qText = `What's the meaning of ${q.word} (${q.reading}) ?`;
+          sub = '';
+          answer = q.meaning;
+        }else if(state.mode === 'reading'){
+          field = 'reading';
+          qText = `What's the reading of ${q.word} (${q.meaning}) ?`;
+          sub = '';
+          answer = q.reading;
+        }else{ // kanji
+          field = 'word';
+          qText = `What's the kanji for ${q.meaning} (${q.reading}) ?`;
+          sub = '';
+          answer = q.word;
+        }
+        state.answers.push(answer);
+        state.choices.push(buildChoices(state.set, field, answer));
+      }
+
+      els.results.classList.remove('active');
+      els.quiz.classList.add('active');
+      renderQuestion();
+    }
+
+    function renderQuestion(){
+      const i = state.idx;
+      const q = state.set[i];
+      if(!q){ return finish(); }
+
+      // Update header
+      els.counter.textContent = `${i+1} / ${state.set.length}`;
+      els.bar.style.width = `${Math.round(((i)/state.set.length)*100)}%`;
+      setModePill();
+
+      // Build question with color highlight
+      let html = "";
+      if(state.mode === 'meaning'){
+        html = `What's the meaning of 
+          <span class="q-word">${q.word}</span> 
+          <span class="q-subword">(${q.reading})</span> ?`;
+      }else if(state.mode === 'reading'){
+        html = `What's the reading of 
+          <span class="q-word">${q.word}</span> 
+          <span class="q-subword">(${q.meaning})</span> ?`;
+      }else{
+        html = `What's the kanji for 
+          <span class="q-word">${q.meaning}</span> 
+          <span class="q-subword">(${q.reading})</span> ?`;
+      }
+
+      els.qText.innerHTML = html;
+      els.qSub.textContent = '';
+
+      // Reset choices / feedback
+      els.choices.innerHTML = '';
+      els.feedback.textContent = '';
+      els.feedback.className = 'feedback';
+      els.next.disabled = true;
+
+      const opts = state.choices[i];
+      opts.forEach((text, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'choice';
+        btn.textContent = `${idx+1}. ${text}`;
+        btn.addEventListener('click', () => choose(idx));
+        els.choices.appendChild(btn);
+      });
+    }
+
+
+    function choose(index){
+      const i = state.idx; if(state.picked[i] != null) return; // already answered
+      state.picked[i] = index;
+      const answer = state.answers[i];
+      const opts = state.choices[i];
+      const correctIndex = opts.indexOf(answer);
+      const children = [...els.choices.children];
+
+      children.forEach((btn, idx) => {
+        if(idx === correctIndex) btn.classList.add('correct');
+        if(idx === index && idx !== correctIndex) btn.classList.add('wrong');
+        btn.disabled = true;
+      });
+
+      if(index === correctIndex){
+        state.correct++;
+        els.feedback.textContent = 'Correct!';
+        els.feedback.classList.add('good');
+      }else{
+        els.feedback.innerHTML = `Incorrect. Correct answer: <b>${answer}</b>`;
+        els.feedback.classList.add('bad');
+        state.review.push(i);
+      }
+      els.next.disabled = false;
+      // advance progress a little for a satisfying feel
+      els.bar.style.width = `${Math.round(((i+1)/state.set.length)*100)}%`;
+    }
+
+    function next(){
+      if(state.picked[state.idx] == null) return; // must answer
+      state.idx++;
+      if(state.idx >= state.set.length) return finish();
+      renderQuestion();
+    }
+
+    function finish(){
+      els.quiz.classList.remove('active');
+      els.results.classList.add('active');
+      const total = state.set.length; const c = state.correct;
+      const pct = Math.round((c/Math.max(1,total))*100);
+      els.score.textContent = `${pct}%`;
+      els.breakdown.innerHTML = `<b>${c}</b> correct out of <b>${total}</b><br><span class="muted">Mode: ${state.mode.toUpperCase()} · Level: N${state.level}</span>`;
+      const wrong = total - c;
+      els.summary.innerHTML = wrong ? `You missed <b>${wrong}</b>. Click <b>Review mistakes</b> to cycle through them.` : `✨ Nice! Flawless round. Try a different mode or level.`;
+    }
+
+    function reset(){
+      state.idx = 0; state.set = []; state.answers = []; state.choices = []; state.picked = []; state.correct = 0; state.review = [];
+      els.quiz.classList.remove('active');
+      els.results.classList.remove('active');
+      els.qText.textContent = 'Press Start to begin';
+      els.qSub.textContent = '';
+      els.choices.innerHTML = '';
+      els.feedback.textContent = '';
+      els.counter.textContent = '0 / 0';
+      els.bar.style.width = '0%';
+    }
+
+    function reviewMistakes(){
+      if(!state.review.length){ alert('No mistakes to review.'); return; }
+      // Build a mini-session from the ones you missed
+      const missed = state.review.map(i => state.set[i]);
+      state.questions = missed.length; storeSettings();
+      state.idx = 0; state.correct = 0; state.picked = []; state.review = [];
+      state.set = missed;
+      state.answers = []; state.choices = [];
+      for(const q of state.set){
+        if(state.mode === 'meaning'){
+          state.answers.push(q.meaning);
+          state.choices.push(buildChoices(state.set, 'meaning', q.meaning));
+        }else if(state.mode === 'reading'){
+          state.answers.push(q.reading);
+          state.choices.push(buildChoices(state.set, 'reading', q.reading));
+        }else{
+          state.answers.push(q.word);
+          state.choices.push(buildChoices(state.set, 'word', q.word));
+        }
+      }
+      els.results.classList.remove('active');
+      els.quiz.classList.add('active');
+      renderQuestion();
+    }
+
+    // ========= Event Wiring =========
+    loadAll();
+    // Initialize controls from saved state
+    syncControlsFromState();
+
+    els.level.addEventListener('change', (e)=>{ state.level = Number(e.target.value); storeSettings(); });
+    els.num.addEventListener('change', (e)=>{ state.questions = Math.max(1, Number(e.target.value||10)); storeSettings(); });
+    els.modeSeg.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      state.mode = btn.dataset.mode; storeSettings();
+      for(const b of els.modeSeg.querySelectorAll('button')) b.classList.toggle('active', b===btn);
+      setModePill();
+    });
+
+    els.start.addEventListener('click', ()=>{ startQuiz(); });
+    els.reset.addEventListener('click', ()=>{ reset(); });
+    els.next.addEventListener('click', ()=>{ next(); });
+    els.again.addEventListener('click', ()=>{ startQuiz(); });
+    els.review.addEventListener('click', ()=>{ reviewMistakes(); });
+
+    // Keyboard shortcuts: 1-4 to answer, Enter to next
+    window.addEventListener('keydown', (e)=>{
+      if(els.quiz.classList.contains('active')){
+        if(['1','2','3','4'].includes(e.key)){
+          const idx = Number(e.key)-1; if(state.picked[state.idx] == null){ choose(idx); }
+        } else if(e.key === 'Enter'){ if(!els.next.disabled) next(); }
+      }
+    });
+  </script>
+</body>
+</html>
