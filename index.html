@@ -51,7 +51,8 @@
       border:1px solid rgba(255,255,255,.06); border-radius:var(--radius); box-shadow:var(--shadow);
     }
     .setup-panel,
-    .quiz-panel {
+    .quiz-panel,
+    .pool-panel {
       width: 100%;
       max-width: 700px;   /* you can adjust this (600–800px works well) */
       margin: 0 auto 20px auto;  /* center + spacing below */
@@ -80,9 +81,32 @@
     }
     input[type="number"]:focus, select:focus{ border-color: rgba(124,92,255,.7); box-shadow: var(--ring) }
 
-    .segmented{ display:flex; background:#0e1320; border:1px solid rgba(255,255,255,.1); padding:6px; border-radius:12px; gap:6px }
-    .segmented button{ flex:1; padding:10px 12px; border-radius:8px; border:0; background:transparent; color:var(--muted); font-weight:600; cursor:pointer }
-    .segmented button.active{ background:linear-gradient(180deg, rgba(124,92,255,.15), rgba(124,92,255,.08)); color:var(--text) }
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
+
+    .segmented button {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.1);
+      background: #0e1320;
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+      transition: .15s background, .15s color;
+      font-size:12px;
+    }
+
+    .segmented button.active {
+      background: linear-gradient(180deg, rgba(124,92,255,.3), rgba(124,92,255,.2));
+      color: var(--text);
+      border-color: rgba(124,92,255,.4);
+    }
 
     .actions{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap }
     .btn{
@@ -138,6 +162,30 @@
     .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; padding:2px 6px; border-radius:6px; border:1px solid rgba(255,255,255,.15); background:#0e1320; color:var(--muted) }
 
     .hint{ font-size:12px; color:var(--muted) }
+
+    .pool-table {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .pool-item {
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      transition: .2s background, .2s border;
+      font-size: 10px;
+    }
+
+    .pool-item.disabled {
+      opacity: 0.4;
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(239,68,68,0.5); /* red hint */
+    }
+
   </style>
 </head>
 <body>
@@ -169,7 +217,7 @@
           <div class="muted">Vocab & readings practice - <i>by Diptip</i></div>
         </div>
       </div>
-      <div class="pill" id="dataStatus">Looking for data…</div>
+      <!--<div class="pill" id="dataStatus">Looking for data…</div>-->
     </header>
 
     <section class="panel card setup-panel">
@@ -184,23 +232,25 @@
               <option value="4">N4</option>
             </select>
           </div>
-          <div class="row">
-            <label for="mode">Mode</label>
-            <div class="segmented" id="mode">
-              <button data-mode="meaning" class="active">Meaning</button>
-              <button data-mode="reading">Reading</button>
-              <button data-mode="kanji">Kanji</button>
-            </div>
-          </div>
+
           <div class="row">
             <label for="num">Questions per session</label>
             <input id="num" type="number" min="1" max="100" step="1" value="10">
           </div>
-          <div class="row">
-            <label>Shortcuts (PC)</label>
-            <div class="mini"><span class="kbd">1-4</span> pick choice &nbsp;·&nbsp; <span class="kbd">Enter</span> next</div>
+
+          <div class="row" style="grid-column: 1 / -1;">
+            <label for="mode">Mode</label>
+            <div class="segmented" id="mode">
+              <button data-mode="word_to_reading" class="active">Kanji → Reading</button>
+              <button data-mode="word_to_meaning">Kanji → Meaning</button>
+              <button data-mode="reading_to_word">Reading → Kanji</button>
+              <button data-mode="reading_to_meaning">Reading → Meaning</button>
+              <button data-mode="meaning_to_word">Meaning → Kanji</button>
+              <button data-mode="meaning_to_reading">Meaning → Reading</button>
+            </div>
           </div>
         </div>
+
 
         <div class="actions">
           <button class="btn primary" id="startBtn">Start</button>
@@ -208,6 +258,7 @@
           <div class="hint" id="hint"></div>
         </div>
     </section>
+
     <section class="panel quiz-panel">
         <div class="quiz" id="quiz">
           <div class="q-top">
@@ -240,12 +291,34 @@
           </div>
         </div>
     </section>
+
+
+    <section class="panel card pool-panel">
+      <div class="title" style="display:flex; justify-content:space-between; align-items:center;">
+        Pool Selection (optional)
+        <button id="togglePool" class="btn secondary">Show</button>
+      </div>
+      <div class="muted">Click a word to disable/enable it. Disabled = will not appear in questions.</div>
+
+      <div id="poolTable" class="pool-table">
+        <!-- JS will fill in these words -->
+      </div>
+    </section>
+
   </div>
 
   <script>
     // ========= Data Loading & Parsing =========
     const available_levels = [5,4];
-    const available_modes = ["meaning","reading","kanji"];
+    const available_modes = [
+      "word_to_reading",
+      "word_to_meaning",
+      "reading_to_word",
+      "reading_to_meaning",
+      "meaning_to_word",
+      "meaning_to_reading"
+    ];
+
 
     function textLines(str){
       return (str||"").replace(/\r/g, "").split("\n").map(s=>s.trim()).filter(Boolean);
@@ -280,14 +353,50 @@
         KN[L] = parseK(L);
       }
       dataReady = available_levels.some(L => (JN[L] && JN[L].length));
-      const pill = document.getElementById('dataStatus');
-      if(dataReady){
-        pill.textContent = 'Data loaded'; pill.style.color = '#bde5ff';
-      }else{
-        pill.textContent = 'No data detected'; pill.style.color = '#ffb4b4';
-        document.getElementById('hint').innerHTML = 'Tip: include <code>data/J5.js</code>, <code>data/K5.js</code>, etc. See comment in the HTML.';
-      }
     }
+
+    function buildPool() {
+      const pool = JN[state.level] || [];
+      return pool.filter(q => !state.excluded.has(q.word + '|' + q.reading));
+    }
+
+    function renderPool() {
+      const poolDiv = document.getElementById('poolTable');
+      poolDiv.innerHTML = "";
+
+      const pool = JN[state.level] || [];
+      pool.forEach(q => {
+        const key = q.word + "|" + q.reading;
+        const div = document.createElement('div');
+        div.className = "pool-item";
+        if (state.excluded.has(key)) div.classList.add("disabled");
+
+        div.innerHTML = `<b>${q.word}</b> <span style="color: var(--muted);">(${q.reading})</span>`;
+        div.addEventListener('click', () => {
+          if (state.excluded.has(key)) {
+            state.excluded.delete(key);
+          } else {
+            state.excluded.add(key);
+          }
+          renderPool();
+        });
+
+        poolDiv.appendChild(div);
+      });
+    }
+    const toggleBtn = document.getElementById('togglePool');
+    const poolTable = document.getElementById('poolTable');
+
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = poolTable.style.display === "none";
+      poolTable.style.display = isHidden ? "grid" : "none";
+      toggleBtn.textContent = isHidden ? "Hide" : "Show";
+    });
+    poolTable.style.display = "none";
+    poolTable.style.display = "none";
+    toggleBtn.textContent = "Show"
+
+
 
     // Fallback demo data so the UI works out-of-the-box
     if(!window.J5){
@@ -305,7 +414,8 @@
       answers: [], // strings
       picked: [], // indexes picked 0..3 or -1
       correct: 0,
-      review: [] // indices answered wrong
+      review: [], // indices answered wrong
+      excluded: new Set(), // store disabled words (by unique key, e.g. word + reading)
     };
 
     // ========= Utilities =========
@@ -317,24 +427,71 @@
 
     function unique(arr){ return Array.from(new Set(arr)); }
 
-    function buildChoices(allQ, field, answerVal){
-      // Prefer distractors from the same session set; backfill from full level pool if needed
+    function suffixSimilarity(a, b) {
+      let i = 0;
+      while (
+        i < a.length &&
+        i < b.length &&
+        a[a.length - 1 - i] === b[b.length - 1 - i]
+      ) {
+        i++;
+      }
+      return i;
+    }
+    
+    function buildChoices(allQ, field, answerVal) {
+      // If the target field is reading:
+      if (field === "reading") {
+        const pool = buildPool(); // use full pool, not only questions
+        // Extract unique readings except the answer
+        let allReadings = Array.from(new Set(
+          pool.map(q => q.reading).filter(r => r !== answerVal)
+        ));
+
+        // Sort by suffix similarity DESC
+        allReadings.sort((a, b) => {
+          return suffixSimilarity(b, answerVal) - suffixSimilarity(a, answerVal);
+        });
+
+        // Start choices with best matches (similar endings first)
+        const distractors = allReadings.slice(0, 3); // top similar 3
+
+        let opts = [answerVal, ...distractors];
+
+        // If less than 4, add random others
+        if (opts.length < 4) {
+          const remaining = allReadings.slice(3);
+          const extra = sample(remaining, 4 - opts.length);
+          opts = opts.concat(extra);
+        }
+
+        // Shuffle for randomness, capped at 4
+        return sample(opts, 4);
+      }
+
+      // ELSE: fallback to your old logic for 'word' and 'meaning'
       const fromSet = unique(allQ.map(q=>q[field]).filter(v=>v!==answerVal));
       let pool = sample(fromSet, 3);
       if(pool.length < 3){
         const full = unique(JN[state.level].map(q=>q[field]).filter(v=>v!==answerVal && !pool.includes(v)));
         pool = pool.concat(sample(full, 3 - pool.length));
       }
-      const opts = sample([answerVal, ...pool], 4); // shuffle and cap at 4
-      // Guarantee answer is present
+      let opts = sample([answerVal, ...pool], 4);
       if(!opts.includes(answerVal)) opts[0] = answerVal;
-      // Shuffle again lightly
       return sample(opts, 4);
     }
 
+
     function setModePill(){
-      const map = {meaning:'Meaning', reading:'Reading', kanji:'Kanji'};
-      document.getElementById('modePill').textContent = `Mode: ${map[state.mode]}`;
+      const modeLabels = {
+        "word_to_reading": "Word → Reading",
+        "word_to_meaning": "Word → Meaning",
+        "reading_to_word": "Reading → Word",
+        "reading_to_meaning": "Reading → Meaning",
+        "meaning_to_word": "Meaning → Word",
+        "meaning_to_reading": "Meaning → Reading"
+      };
+      document.getElementById('modePill').textContent = `Mode: ${modeLabels[state.mode]}`;
     }
 
     // ========= Rendering =========
@@ -378,33 +535,59 @@
 
     function startQuiz(){
       if(!dataReady){ loadAll(); }
-      const pool = JN[state.level] || [];
+      //const pool = JN[state.level] || [];
+      const pool = buildPool();
+      if (!pool.length) {
+        alert("No words available. Re-enable some words in the Word Pool.");
+        return;
+      }
       if(!pool.length){ alert('No data for this level. Make sure data/J'+state.level+'.js is loaded.'); return; }
       state.idx = 0; state.correct = 0; state.picked = []; state.review = [];
       state.set = sample(pool, state.questions);
       state.choices = []; state.answers = [];
 
       for(const q of state.set){
-        let field, qText, sub, answer;
-        if(state.mode === 'meaning'){
-          field = 'meaning';
-          qText = `What's the meaning of<br>${q.word} (${q.reading}) ?`;
-          sub = '';
-          answer = q.meaning;
-        }else if(state.mode === 'reading'){
-          field = 'reading';
-          qText = `What's the reading of<br>${q.word} (${q.meaning}) ?`;
-          sub = '';
-          answer = q.reading;
-        }else{ // kanji
-          field = 'word';
-          qText = `What's the kanji for<br>${q.meaning} (${q.reading}) ?`;
-          sub = '';
-          answer = q.word;
+        let questionText = "";
+        let answer = "";
+        let field = "";
+
+        switch(state.mode){
+          case "word_to_reading":
+            questionText = `What is the reading of ${q.word}?`;
+            answer = q.reading;
+            field = "reading";
+            break;
+          case "word_to_meaning":
+            questionText = `What is the meaning of ${q.word}?`;
+            answer = q.meaning;
+            field = "meaning";
+            break;
+          case "reading_to_word":
+            questionText = `Which word matches the reading ${q.reading}?`;
+            answer = q.word;
+            field = "word";
+            break;
+          case "reading_to_meaning":
+            questionText = `What is the meaning of the reading ${q.reading}?`;
+            answer = q.meaning;
+            field = "meaning";
+            break;
+          case "meaning_to_word":
+            questionText = `Which word means "${q.meaning}"?`;
+            answer = q.word;
+            field = "word";
+            break;
+          case "meaning_to_reading":
+            questionText = `What is the reading of "${q.meaning}"?`;
+            answer = q.reading;
+            field = "reading";
+            break;
         }
+
         state.answers.push(answer);
-        state.choices.push(buildChoices(state.set, field, answer));
+        state.choices.push(buildChoices(state.set, field, answer)); // same build
       }
+
 
       els.results.classList.remove('active');
       els.quiz.classList.add('active');
@@ -423,18 +606,24 @@
 
       // Build question with color highlight
       let html = "";
-      if(state.mode === 'meaning'){
-        html = `What's the meaning of <br>
-          <span class="q-word">${q.word}</span> 
-          <span class="q-subword">(${q.reading})</span> ?`;
-      }else if(state.mode === 'reading'){
-        html = `What's the reading of <br>
-          <span class="q-word">${q.word}</span> 
-          <span class="q-subword">(${q.meaning})</span> ?`;
-      }else{
-        html = `What's the kanji for <br>
-          <span class="q-word">${q.meaning}</span> 
-          <span class="q-subword">(${q.reading})</span> ?`;
+      if(state.mode === 'word_to_reading'){
+        html = `What is the reading of <br>
+          <span class="q-word">${q.word}</span> ?`;
+      }else if(state.mode === 'word_to_meaning'){
+        html = `What is the meaning of <br>
+          <span class="q-word">${q.word}</span> ?`;
+      }else if(state.mode === 'reading_to_word'){
+        html = `What is the kanji for <br>
+          <span class="q-word">${q.reading}</span> ?`;
+      }else if(state.mode === 'reading_to_meaning'){
+        html = `What is the meaning of <br>
+          <span class="q-word">${q.reading}</span> ?`;
+      }else if(state.mode === 'meaning_to_word'){
+        html = `What is the kanji for <br>
+          <span class="q-word">${q.meaning}</span> ?`;
+      }else if(state.mode === 'meaning_to_reading'){
+        html = `What is the reading of <br>
+          <span class="q-word">${q.meaning}</span> ?`;
       }
 
       els.qText.innerHTML = html;
@@ -545,8 +734,15 @@
     loadAll();
     // Initialize controls from saved state
     syncControlsFromState();
+    renderPool();
 
-    els.level.addEventListener('change', (e)=>{ state.level = Number(e.target.value); storeSettings(); });
+    //els.level.addEventListener('change', (e)=>{ state.level = Number(e.target.value); storeSettings(); });
+    els.level.addEventListener('change', (e)=>{
+      state.level = Number(e.target.value);
+      state.excluded.clear(); // reset for new level
+      renderPool();
+      storeSettings();
+    });
     els.num.addEventListener('change', (e)=>{ state.questions = Math.max(1, Number(e.target.value||10)); storeSettings(); });
     els.modeSeg.addEventListener('click', (e)=>{
       const btn = e.target.closest('button'); if(!btn) return;
