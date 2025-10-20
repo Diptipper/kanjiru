@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <script src="data/J5.js"></script>
-  <script src="data/K5.js"></script>
+  <script src="data/J41.js"></script>
+  <script src="data/J42.js"></script>
   <script src="data/J4.js"></script>
-  <script src="data/K4.js"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kanjiru – JLPT Quiz</title>
@@ -83,7 +83,7 @@
 
     .segmented {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 6px;
       background: transparent;
       border: none;
@@ -166,7 +166,7 @@
     .pool-table {
       margin-top: 12px;
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
     }
 
@@ -189,24 +189,6 @@
   </style>
 </head>
 <body>
-  <!--
-    🔧 How to provide your data:
-    Include your existing data files before this script (keep this HTML as is) e.g.
-
-    <script src="data/J5.js"></script>
-    <script src="data/K5.js"></script>
-    <script src="data/J4.js"></script>
-    <script src="data/K4.js"></script>
-
-    Each file should define a template-string like:
-      window.J5 = `
-      食べる たべる to eat
-      飲む のむ to drink
-      `
-      window.K5 = `
-      食 飲 会 話 使 読 書 学
-      `
-  -->
 
   <div class="wrap">
     <header>
@@ -228,8 +210,10 @@
           <div class="row">
             <label for="level">JLPT Level</label>
             <select id="level">
-              <option value="5">N5</option>
-              <option value="4">N4</option>
+              <option value="5">N5 (261 words)</option>
+              <option value="4">N4 (381 words)</option>
+              <option value="41">&nbsp;&nbsp;&nbsp;N4.1 (200 words)</option>
+              <option value="42">&nbsp;&nbsp;&nbsp;N4.2 (181 words)</option>
             </select>
           </div>
 
@@ -241,12 +225,9 @@
           <div class="row" style="grid-column: 1 / -1;">
             <label for="mode">Mode</label>
             <div class="segmented" id="mode">
-              <button data-mode="word_to_reading" class="active">Kanji → Reading</button>
-              <button data-mode="word_to_meaning">Kanji → Meaning</button>
-              <button data-mode="reading_to_word">Reading → Kanji</button>
-              <button data-mode="reading_to_meaning">Reading → Meaning</button>
-              <button data-mode="meaning_to_word">Meaning → Kanji</button>
-              <button data-mode="meaning_to_reading">Meaning → Reading</button>
+              <button data-mode="word" class="active">Kanji</button>
+              <button data-mode="meaning">Meaning</button>
+              <button data-mode="reading">Reading</button>
             </div>
           </div>
         </div>
@@ -309,15 +290,13 @@
 
   <script>
     // ========= Data Loading & Parsing =========
-    const available_levels = [5,4];
-    const available_modes = [
-      "word_to_reading",
-      "word_to_meaning",
-      "reading_to_word",
-      "reading_to_meaning",
-      "meaning_to_word",
-      "meaning_to_reading"
-    ];
+    const available_levels = [5,41,42,4];
+    const available_modes = ["word", "meaning", "reading"];
+    const questionOrder = {
+      word:    ["reading", "meaning"],   // show word, ask reading → meaning
+      meaning: ["word", "reading"],     // show meaning, ask kanji → reading
+      reading: ["word", "meaning"]      // show reading, ask kanji → meaning
+    };
 
 
     function textLines(str){
@@ -339,18 +318,11 @@
       return out;
     }
 
-    function parseK(level){
-      const s = window["K"+level];
-      if(!s) return [];
-      return textLines(s).join(" ").split(/\s+/).filter(Boolean);
-    }
-
-    const JN = {}; const KN = {};
+    const JN = {};
     let dataReady = false;
     function loadAll(){
       for(const L of available_levels){
         JN[L] = parseJ(L);
-        KN[L] = parseK(L);
       }
       dataReady = available_levels.some(L => (JN[L] && JN[L].length));
     }
@@ -483,16 +455,10 @@
 
 
     function setModePill(){
-      const modeLabels = {
-        "word_to_reading": "Word → Reading",
-        "word_to_meaning": "Word → Meaning",
-        "reading_to_word": "Reading → Word",
-        "reading_to_meaning": "Reading → Meaning",
-        "meaning_to_word": "Meaning → Word",
-        "meaning_to_reading": "Meaning → Reading"
-      };
-      document.getElementById('modePill').textContent = `Mode: ${modeLabels[state.mode]}`;
+      const labels = { word: "Kanji", meaning: "Meaning", reading: "Reading" };
+      document.getElementById('modePill').textContent = `Mode: ${labels[state.mode]}`;
     }
+
 
     // ========= Rendering =========
     const els = {
@@ -535,124 +501,104 @@
 
     function startQuiz(){
       if(!dataReady){ loadAll(); }
-      //const pool = JN[state.level] || [];
+
       const pool = buildPool();
       if (!pool.length) {
         alert("No words available. Re-enable some words in the Word Pool.");
         return;
       }
-      if(!pool.length){ alert('No data for this level. Make sure data/J'+state.level+'.js is loaded.'); return; }
-      state.idx = 0; state.correct = 0; state.picked = []; state.review = [];
-      state.set = sample(pool, state.questions);
-      state.choices = []; state.answers = [];
 
-      for(const q of state.set){
-        let questionText = "";
-        let answer = "";
-        let field = "";
+      // Reset state
+      state.idx = 0;
+      state.correct = 0;
+      state.picked = []; 
+      state.review = [];
+      state.set = sample(pool, state.questions); // list of words
+      state.subQuestions = [];
 
-        switch(state.mode){
-          case "word_to_reading":
-            questionText = `What is the reading of ${q.word}?`;
-            answer = q.reading;
-            field = "reading";
-            break;
-          case "word_to_meaning":
-            questionText = `What is the meaning of ${q.word}?`;
-            answer = q.meaning;
-            field = "meaning";
-            break;
-          case "reading_to_word":
-            questionText = `Which word matches the reading ${q.reading}?`;
-            answer = q.word;
-            field = "word";
-            break;
-          case "reading_to_meaning":
-            questionText = `What is the meaning of the reading ${q.reading}?`;
-            answer = q.meaning;
-            field = "meaning";
-            break;
-          case "meaning_to_word":
-            questionText = `Which word means "${q.meaning}"?`;
-            answer = q.word;
-            field = "word";
-            break;
-          case "meaning_to_reading":
-            questionText = `What is the reading of "${q.meaning}"?`;
-            answer = q.reading;
-            field = "reading";
-            break;
-        }
-
-        state.answers.push(answer);
-        state.choices.push(buildChoices(state.set, field, answer)); // same build
-      }
-
+      // Build 2 sub-questions per word based on mode
+      const order = questionOrder[state.mode];  // e.g. ["reading","meaning"]
+      
+      state.set.forEach(wordObj => {
+        order.forEach(targetField => {
+          state.subQuestions.push({
+            wordObj,          // reference to the base word
+            target: targetField,  // what to ask for
+            answered: null         // true/false later
+          });
+        });
+      });
 
       els.results.classList.remove('active');
       els.quiz.classList.add('active');
       renderQuestion();
     }
 
-    function renderQuestion(){
-      const i = state.idx;
-      const q = state.set[i];
-      if(!q){ return finish(); }
 
-      // Update header
-      els.counter.textContent = `${i+1} / ${state.set.length}`;
-      els.bar.style.width = `${Math.round(((i)/state.set.length)*100)}%`;
+    function renderQuestion(){
+      const sq = state.subQuestions[state.idx];
+      if(!sq) return finish();
+
+      // Update COUNTER by word pair progress (every 2 subQs = 1 word)
+      const wordIndex = Math.floor(state.idx / 2) + 1;
+      els.counter.textContent = `${wordIndex} / ${state.set.length}`;
+
+      // Update PROGRESS BAR also per word
+      const progress = (wordIndex - 1) / state.set.length * 100;
+      els.bar.style.width = `${progress}%`;
+
       setModePill();
 
-      // Build question with color highlight
-      let html = "";
-      if(state.mode === 'word_to_reading'){
-        html = `What is the reading of <br>
-          <span class="q-word">${q.word}</span> ?`;
-      }else if(state.mode === 'word_to_meaning'){
-        html = `What is the meaning of <br>
-          <span class="q-word">${q.word}</span> ?`;
-      }else if(state.mode === 'reading_to_word'){
-        html = `What is the kanji for <br>
-          <span class="q-word">${q.reading}</span> ?`;
-      }else if(state.mode === 'reading_to_meaning'){
-        html = `What is the meaning of <br>
-          <span class="q-word">${q.reading}</span> ?`;
-      }else if(state.mode === 'meaning_to_word'){
-        html = `What is the kanji for <br>
-          <span class="q-word">${q.meaning}</span> ?`;
-      }else if(state.mode === 'meaning_to_reading'){
-        html = `What is the reading of <br>
-          <span class="q-word">${q.meaning}</span> ?`;
+      const q = sq.wordObj;
+      const target = sq.target; // "reading", "meaning", or "word"
+      
+      // Display base prompt depending on mode
+      let prompt = "";
+      if(state.mode === "word"){
+        // Showing the word, asking reading or meaning
+        prompt = target === "reading"
+          ? `What is the reading of <span class="q-word">${q.word}</span>?`
+          : `What is the meaning of <span class="q-word">${q.word}</span>?`;
+      }
+      else if(state.mode === "meaning"){
+        // Showing the meaning, asking word or reading
+        prompt = target === "word"
+          ? `What is the kanji for "<span class="q-word">${q.meaning}</span>"?`
+          : `What is the reading of "<span class="q-word">${q.meaning}</span>"?`;
+      }
+      else if(state.mode === "reading"){
+        // Showing the reading, asking word or meaning
+        prompt = target === "word"
+          ? `What is the kanji for <span class="q-word">${q.reading}</span>?`
+          : `What is the meaning of <span class="q-word">${q.reading}</span>?`;
       }
 
-      els.qText.innerHTML = html;
-      els.qSub.textContent = '';
+      els.qText.innerHTML = prompt;
+      els.qSub.textContent = "";
 
-      // Reset choices / feedback
+      // Build choices
+      const answer = q[target];
+      const choices = buildChoices(state.set, target, answer); // reuse your choice logic
       els.choices.innerHTML = '';
       els.feedback.textContent = '';
       els.feedback.className = 'feedback';
       els.next.disabled = true;
 
-      const opts = state.choices[i];
-      opts.forEach((text, idx) => {
+      choices.forEach((text, idx) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'choice';
         btn.textContent = `${idx+1}. ${text}`;
-        btn.addEventListener('click', () => choose(idx));
+        btn.addEventListener('click', () => choose(idx, answer, choices));
         els.choices.appendChild(btn);
       });
     }
 
+    function choose(index, answer, choices){
+      const sq = state.subQuestions[state.idx];
+      if(sq.answered !== null) return; // already answered
 
-    function choose(index){
-      const i = state.idx; if(state.picked[i] != null) return; // already answered
-      state.picked[i] = index;
-      const answer = state.answers[i];
-      const opts = state.choices[i];
-      const correctIndex = opts.indexOf(answer);
+      const correctIndex = choices.indexOf(answer);
       const children = [...els.choices.children];
 
       children.forEach((btn, idx) => {
@@ -662,39 +608,81 @@
       });
 
       if(index === correctIndex){
-        state.correct++;
+        sq.answered = true;
         els.feedback.textContent = 'Correct!';
         els.feedback.classList.add('good');
-      }else{
+      } else {
+        sq.answered = false;
         els.feedback.innerHTML = `Incorrect. Correct answer: <b>${answer}</b>`;
         els.feedback.classList.add('bad');
-        state.review.push(i);
       }
+
       els.next.disabled = false;
-      // advance progress a little for a satisfying feel
-      els.bar.style.width = `${Math.round(((i+1)/state.set.length)*100)}%`;
     }
 
+
     function next(){
-      if(state.picked[state.idx] == null) return; // must answer
+      const sq = state.subQuestions[state.idx];
+      if(sq.answered === null) return;
+
+      // Check if we just finished a 2-step block
+      const endOfPair = ((state.idx % 2) === 1);
+
       state.idx++;
-      if(state.idx >= state.set.length) return finish();
+
+      if(endOfPair){
+        // Evaluate the pair
+        const pairIndex = state.idx - 2; // start of the pair
+        const sq1 = state.subQuestions[pairIndex];
+        const sq2 = state.subQuestions[pairIndex + 1];
+        const isCorrectPair = (sq1.answered && sq2.answered);
+
+        if(isCorrectPair){
+          state.correct++;
+        } else {
+          // Push WORD index (not subquestion index!)
+          const wordIndex = Math.floor(pairIndex / 2);
+          state.review.push(wordIndex);
+        }
+      }
+
+      if(state.idx >= state.subQuestions.length){
+        return finish();
+      }
+
       renderQuestion();
     }
+
 
     function finish(){
       els.quiz.classList.remove('active');
       els.results.classList.add('active');
-      const total = state.set.length; const c = state.correct;
-      const pct = Math.round((c/Math.max(1,total))*100);
+
+      const totalWords = state.set.length;
+      const correctWords = state.correct;  // already counted per word-pair
+      const pct = Math.round((correctWords / Math.max(1, totalWords)) * 100);
+
       els.score.textContent = `${pct}%`;
-      els.breakdown.innerHTML = `<b>${c}</b> correct out of <b>${total}</b><br><span class="muted">Mode: ${state.mode.toUpperCase()} · Level: N${state.level}</span>`;
-      const wrong = total - c;
-      els.summary.innerHTML = wrong ? `You missed <b>${wrong}</b>. Click <b>Review mistakes</b> to cycle through them.` : `✨ Nice! Flawless round. Try a different mode or level.`;
+      els.breakdown.innerHTML = `
+        <b>${correctWords}</b> correct out of <b>${totalWords}</b><br>
+        <span class="muted">Mode: ${state.mode.toUpperCase()} · Level: N${state.level}</span>
+      `;
+
+      const wrong = totalWords - correctWords;
+      els.summary.innerHTML = wrong
+        ? `You missed <b>${wrong}</b>. Click <b>Review mistakes</b> to cycle through them.`
+        : `✨ Nice! Flawless round. Try a different mode or level.`;
     }
 
+
     function reset(){
-      state.idx = 0; state.set = []; state.answers = []; state.choices = []; state.picked = []; state.correct = 0; state.review = [];
+      state.idx = 0;
+      state.set = [];
+      state.subQuestions = [];
+      state.picked = [];
+      state.correct = 0;
+      state.review = [];
+
       els.quiz.classList.remove('active');
       els.results.classList.remove('active');
       els.qText.textContent = 'Press Start to begin';
@@ -705,30 +693,43 @@
       els.bar.style.width = '0%';
     }
 
+
     function reviewMistakes(){
-      if(!state.review.length){ alert('No mistakes to review.'); return; }
-      // Build a mini-session from the ones you missed
-      const missed = state.review.map(i => state.set[i]);
-      state.questions = missed.length; storeSettings();
-      state.idx = 0; state.correct = 0; state.picked = []; state.review = [];
-      state.set = missed;
-      state.answers = []; state.choices = [];
-      for(const q of state.set){
-        if(state.mode === 'meaning'){
-          state.answers.push(q.meaning);
-          state.choices.push(buildChoices(state.set, 'meaning', q.meaning));
-        }else if(state.mode === 'reading'){
-          state.answers.push(q.reading);
-          state.choices.push(buildChoices(state.set, 'reading', q.reading));
-        }else{
-          state.answers.push(q.word);
-          state.choices.push(buildChoices(state.set, 'word', q.word));
-        }
+      if (!state.review.length) {
+        alert("No mistakes to review.");
+        return;
       }
+
+      // Build a mini-session from words that were wrong
+      const missedWords = state.review.map(i => state.set[i]);
+
+      state.questions = missedWords.length; 
+      storeSettings();
+
+      state.idx = 0;
+      state.correct = 0;
+      state.picked = [];
+      state.review = [];
+      state.set = missedWords;
+
+      // Build new subQuestions for the missed words
+      state.subQuestions = [];
+      const order = questionOrder[state.mode];
+      state.set.forEach(wordObj => {
+        order.forEach(target => {
+          state.subQuestions.push({
+            wordObj,
+            target,
+            answered: null
+          });
+        });
+      });
+
       els.results.classList.remove('active');
       els.quiz.classList.add('active');
       renderQuestion();
     }
+
 
     // ========= Event Wiring =========
     loadAll();
