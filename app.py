@@ -1,3 +1,6 @@
+
+# Prototype for the web app
+
 from os import system
 import random
 
@@ -179,5 +182,6 @@ while True :
 				else :
 					comment = ""
 				break
+
 
 print()
