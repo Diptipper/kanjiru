@@ -40,6 +40,21 @@
     header{
       display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;
     }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;  /* so it doesn't block clicks */
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(124,92,255,.25), transparent 60%),
+                  radial-gradient(1200px 800px at 90% 0%, rgba(45,212,191,.20), transparent 65%),
+                  var(--bg);
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
     .brand{ display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.2px; }
     .logo{
       width:36px; height:36px; border-radius:12px; display:grid; place-items:center;
