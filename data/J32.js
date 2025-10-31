@@ -1,4 +1,4 @@
-window.J31=`
+window.J32=`
 お礼 おれい gratitude
 神 かみ god
 神社 じんじゃ shrine
