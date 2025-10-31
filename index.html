@@ -221,7 +221,6 @@
           <div class="muted">Vocab & readings practice - <i>by Diptip</i></div>
         </div>
       </div>
-      <!--<div class="pill" id="dataStatus">Looking for data…</div>-->
     </header>
 
     <section class="panel card setup-panel">
@@ -253,8 +252,15 @@
               <button data-mode="word" class="active">Kanji</button>
               <button data-mode="meaning">Meaning</button>
               <button data-mode="reading">Reading</button>
+              <button data-mode="learning">Study</button>
             </div>
           </div>
+
+          <div class="row learning-range" style="grid-column: 1 / -1; display: none;">
+            <label>Lesson</label>
+            <select id="learnGroup"></select>
+          </div>
+
         </div>
 
 
@@ -316,7 +322,7 @@
   <script>
     // ========= Data Loading & Parsing =========
     const available_levels = [5,41,42,4,31,32];
-    const available_modes = ["word", "meaning", "reading"];
+    const available_modes = ["word", "meaning", "reading","learning"];
     const questionOrder = {
       word:    ["reading", "meaning"],   // show word, ask reading → meaning
       meaning: ["word", "reading"],     // show meaning, ask kanji → reading
@@ -380,7 +386,38 @@
 
         poolDiv.appendChild(div);
       });
+      if (state.mode === 'learning') updateLearningGroups();
     }
+
+    function updateLearningGroups() {
+      const pool = buildPool();
+      const sel = document.getElementById('learnGroup');
+      sel.innerHTML = "";
+
+      if (pool.length === 0) {
+        state.learningGroups = [];
+        return;
+      }
+
+      // Divide pool into groups of 4
+      const groups = partitionIntoGroups(pool, 4);
+      state.learningGroups = groups;
+
+      groups.forEach((grp, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+
+        // Get all kanji (words) for this group
+        const names = grp.map(w => w.word).join(', ');
+        opt.textContent = `${i + 1}:　${names}`;
+
+        sel.appendChild(opt);
+      });
+    }
+
+
+
+
     const toggleBtn = document.getElementById('togglePool');
     const poolTable = document.getElementById('poolTable');
 
@@ -413,6 +450,8 @@
       correct: 0,
       review: [], // indices answered wrong
       excluded: new Set(), // store disabled words (by unique key, e.g. word + reading)
+      learningGroups: [],          // array of arrays of word objects
+      learning: null,              // { group: [], idx: 0 } during a learning session
     };
 
     // ========= Utilities =========
@@ -423,6 +462,24 @@
     }
 
     function unique(arr){ return Array.from(new Set(arr)); }
+
+    function buildLearningSubQs(wordObj) {
+      const { word, meaning, reading } = wordObj;
+      const combos = [
+        { from: "word", to: "meaning", q: `What is the meaning of <span class="q-word">${word}</span>?`, answer: meaning },
+        { from: "word", to: "reading", q: `What is the reading of <span class="q-word">${word}</span>?`, answer: reading },
+        { from: "meaning", to: "word", q: `What is the kanji for "<span class="q-word">${meaning}</span>"?`, answer: word },
+        { from: "meaning", to: "reading", q: `What is the reading of "<span class="q-word">${meaning}</span>"?`, answer: reading },
+        { from: "reading", to: "word", q: `What is the kanji for <span class="q-word">${reading}</span>?`, answer: word },
+        { from: "reading", to: "meaning", q: `What is the meaning of <span class="q-word">${reading}</span>?`, answer: meaning },
+      ];
+      // randomize order
+      for (let i = combos.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [combos[i], combos[j]] = [combos[j], combos[i]];
+      }
+      return combos;
+    }
 
     function suffixSimilarity(a, b) {
       let i = 0;
@@ -480,9 +537,23 @@
 
 
     function setModePill(){
-      const labels = { word: "Kanji", meaning: "Meaning", reading: "Reading" };
+      const labels = { word: "Kanji", meaning: "Meaning", reading: "Reading", learning: "Study" };
       document.getElementById('modePill').textContent = `Mode: ${labels[state.mode]}`;
     }
+
+    function partitionIntoGroups(pool, size = 4) {
+      const groups = [];
+      for (let i = 0; i < pool.length; i += size) {
+        groups.push(pool.slice(i, i + size));
+      }
+      // Merge a trailing single into the previous group
+      if (groups.length > 1 && groups[groups.length - 1].length === 1) {
+        const last = groups.pop();
+        groups[groups.length - 1] = groups[groups.length - 1].concat(last);
+      }
+      return groups;
+    }
+
 
 
     // ========= Rendering =========
@@ -533,6 +604,32 @@
         return;
       }
 
+      if (state.mode === 'learning') {
+        const sel = document.getElementById('learnGroup');
+        const groupIndex = Number(sel.value);
+
+        if (!state.learningGroups || !state.learningGroups.length) updateLearningGroups();
+        const chosen = state.learningGroups[groupIndex] || [];
+        if (!chosen.length) { alert("No words in that group!"); return; }
+
+        els.results.classList.remove('active');
+        els.quiz.classList.add('active');
+
+        // Build full flow: each word followed by its 6 subquestions
+        state.learning = {
+          group: chosen,
+          wordIdx: 0,
+          subIdx: -1,
+          subs: buildLearningSubQs(chosen[0]),
+        };
+
+        renderLearningWordIntro();
+        return;
+      }
+
+
+
+
       // Reset state
       state.idx = 0;
       state.correct = 0;
@@ -558,7 +655,6 @@
       els.quiz.classList.add('active');
       renderQuestion();
     }
-
 
     function renderQuestion(){
       const sq = state.subQuestions[state.idx];
@@ -618,6 +714,94 @@
         els.choices.appendChild(btn);
       });
     }
+
+    function renderLearningWordIntro() {
+      const { group, wordIdx } = state.learning;
+      const q = group[wordIdx];
+      els.qText.innerHTML = `<span class="q-word">${q.word}</span>`;
+      els.qSub.innerHTML = `<b>${q.reading}</b><br>${q.meaning}`;
+      els.choices.innerHTML = '';
+      els.feedback.textContent = '';
+      els.counter.textContent = `Word ${wordIdx + 1} / ${group.length}`;
+      els.bar.style.width = ((wordIdx / group.length) * 100) + '%';
+      els.next.textContent = "Start Questions →";
+      els.next.disabled = false;
+    }
+
+    function renderLearningQuestion() {
+      const { group, wordIdx, subs, subIdx } = state.learning;
+      const word = group[wordIdx];
+      const sq = subs[subIdx];
+
+      els.qText.innerHTML = sq.q;
+      els.qSub.textContent = '';
+      els.feedback.textContent = '';
+      els.next.disabled = true;
+      els.next.textContent = "Next";
+
+      const choices = buildChoices(state.learning.group, sq.to, sq.answer);
+      els.choices.innerHTML = '';
+
+      choices.forEach((c, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'choice';
+        btn.textContent = `${i + 1}. ${c}`;
+        btn.addEventListener('click', () => {
+          const correctIndex = choices.indexOf(sq.answer);
+          const children = [...els.choices.children];
+          children.forEach((b, j) => {
+            if (j === correctIndex) b.classList.add('correct');
+            if (j === i && j !== correctIndex) b.classList.add('wrong');
+            b.disabled = true;
+          });
+          if (i === correctIndex) {
+            els.feedback.textContent = "Correct!";
+            els.feedback.className = "feedback good";
+          } else {
+            els.feedback.innerHTML = `Incorrect. Correct answer: <b>${sq.answer}</b>`;
+            els.feedback.className = "feedback bad";
+          }
+          els.next.disabled = false;
+        });
+        els.choices.appendChild(btn);
+      });
+
+      //els.counter.textContent = `Word ${wordIdx + 1} / ${group.length} · Q${subIdx + 1}/6`;
+      els.counter.textContent = `Word ${wordIdx + 1} / ${group.length}`;
+    }
+
+    function nextLearning() {
+      const L = state.learning;
+      if (!L) return;
+
+      // If we just showed the intro card, start first subquestion
+      if (L.subIdx === -1) {
+        L.subIdx = 0;
+        renderLearningQuestion();
+        return;
+      }
+
+      // If we’re in the middle of 6 subquestions
+      if (L.subIdx < L.subs.length - 1) {
+        L.subIdx++;
+        renderLearningQuestion();
+        return;
+      }
+
+      // Finished all 6 for this word → next word or finish
+      if (L.wordIdx < L.group.length - 1) {
+        L.wordIdx++;
+        L.subIdx = -1;
+        L.subs = buildLearningSubQs(L.group[L.wordIdx]);
+        renderLearningWordIntro();
+      } else {
+        finish();
+        state.learning = null;
+      }
+    }
+
+
 
     function choose(index, answer, choices){
       const sq = state.subQuestions[state.idx];
@@ -761,25 +945,53 @@
     // Initialize controls from saved state
     syncControlsFromState();
     renderPool();
+    // --- Auto-show learning dropdown if "learning" mode was selected ---
+    if (state.mode === 'learning') {
+      const rangeRow = document.querySelector('.learning-range');
+      rangeRow.style.display = 'flex';
+      updateLearningGroups();
+    } else {
+      const rangeRow = document.querySelector('.learning-range');
+      rangeRow.style.display = 'none';
+    }
+    
+    updateLearningGroups();
 
     //els.level.addEventListener('change', (e)=>{ state.level = Number(e.target.value); storeSettings(); });
     els.level.addEventListener('change', (e)=>{
       state.level = Number(e.target.value);
       state.excluded.clear(); // reset for new level
       renderPool();
+      if (state.mode === 'learning') updateLearningGroups();
       storeSettings();
     });
     els.num.addEventListener('change', (e)=>{ state.questions = Math.max(1, Number(e.target.value||10)); storeSettings(); });
     els.modeSeg.addEventListener('click', (e)=>{
       const btn = e.target.closest('button'); if(!btn) return;
       state.mode = btn.dataset.mode; storeSettings();
-      for(const b of els.modeSeg.querySelectorAll('button')) b.classList.toggle('active', b===btn);
+
+      for(const b of els.modeSeg.querySelectorAll('button'))
+        b.classList.toggle('active', b===btn);
+
       setModePill();
+
+      const rangeRow = document.querySelector('.learning-range');
+      if (state.mode === 'learning') {
+        rangeRow.style.display = 'flex';
+        updateLearningGroups();
+      } else {
+        rangeRow.style.display = 'none';
+      }
     });
+
 
     els.start.addEventListener('click', ()=>{ startQuiz(); });
     els.reset.addEventListener('click', ()=>{ reset(); });
-    els.next.addEventListener('click', ()=>{ next(); });
+    els.next.addEventListener('click', ()=>{
+      if (state.mode === 'learning') nextLearning();
+      else next();
+    });
+
     els.again.addEventListener('click', ()=>{ startQuiz(); });
     els.review.addEventListener('click', ()=>{ reviewMistakes(); });
 
