@@ -6,6 +6,7 @@
   <script src="data/J42.js"></script>
   <script src="data/J4.js"></script>
   <script src="data/J31.js"></script>
+  <script src="data/J32.js"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kanjiru – JLPT Quiz</title>
@@ -234,8 +235,9 @@
               <option value="4">N4 (381 words)</option>
               <option value="41">&nbsp;&nbsp;&nbsp;N4.1 (200 words)</option>
               <option value="42">&nbsp;&nbsp;&nbsp;N4.2 (181 words)</option>
-              <option value="31">N3 (200 words)</option>
+              <option value="3">N3 (400 words)</option>
               <option value="31">&nbsp;&nbsp;&nbsp;N3.1 (200 words)</option>
+              <option value="32">&nbsp;&nbsp;&nbsp;N3.2 (200 words)</option>
             </select>
           </div>
 
@@ -312,7 +314,7 @@
 
   <script>
     // ========= Data Loading & Parsing =========
-    const available_levels = [5,41,42,4,31];
+    const available_levels = [5,41,42,4,31,32];
     const available_modes = ["word", "meaning", "reading"];
     const questionOrder = {
       word:    ["reading", "meaning"],   // show word, ask reading → meaning
