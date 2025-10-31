@@ -15,19 +15,20 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg: #0b0d12;
-      --panel: #121722;
-      --muted: #7781a1;
-      --text: #e8ecf6;
-      --brand: #7c5cff;
-      --brand-2: #2dd4bf;
-      --good: #22c55e; /* green */
-      --bad: #ef4444; /* red */
-      --ring: 0 0 0 3px rgba(124,92,255,.25);
-      --shadow: 0 10px 30px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.3);
-      --radius: 16px;
+    :root {
+      --bg: #140c1c;
+      --panel: rgba(180,140,255,0.08);
+      --muted: #c8b8e0;
+      --text: #f5f0ff;
+      --brand: #b388ff;
+      --brand-2: #7c5cff;
+      --good: #9affc0;
+      --bad: #ff91a4;
+      --shadow: 0 8px 25px rgba(0,0,0,.3);
+      --radius: 22px;
+      --ring: 0 0 0 3px rgba(180,140,255,.25);
     }
+
     *{ box-sizing:border-box }
     html,body{ height:100% }
     body{
@@ -125,7 +126,7 @@
     }
 
     .segmented button.active {
-      background: linear-gradient(180deg, rgba(124,92,255,.3), rgba(124,92,255,.2));
+      background: linear-gradient(180deg, var(--brand), var(--brand-2));
       color: var(--text);
       border-color: rgba(124,92,255,.4);
     }
@@ -137,7 +138,7 @@
     }
     .btn:active{ transform: translateY(1px) }
     .btn.primary{
-      background: linear-gradient(180deg, rgba(124,92,255,.9), rgba(124,92,255,.8)); color:white; box-shadow: var(--shadow);
+      background: linear-gradient(180deg, var(--brand), var(--brand-2)); color:white; box-shadow: var(--shadow);
     }
     .btn.secondary{ background:#0e1320; color:var(--text); border:1px solid rgba(255,255,255,.12) }
 
@@ -217,8 +218,8 @@
       <div class="brand">
         <div class="logo">字</div>
         <div>
-          <div class="title" style="margin:0">Kanjiru - JLPT Practice</div>
-          <div class="muted">Vocab & readings practice - <i>by Diptip</i></div>
+          <div class="title" style="margin:0">Kanjiru</div>
+          <div class="muted">JLPT practice - <i>by Diptip</i></div>
         </div>
       </div>
     </header>
@@ -466,12 +467,12 @@
     function buildLearningSubQs(wordObj) {
       const { word, meaning, reading } = wordObj;
       const combos = [
-        { from: "word", to: "meaning", q: `What is the meaning of <span class="q-word">${word}</span>?`, answer: meaning },
-        { from: "word", to: "reading", q: `What is the reading of <span class="q-word">${word}</span>?`, answer: reading },
-        { from: "meaning", to: "word", q: `What is the kanji for "<span class="q-word">${meaning}</span>"?`, answer: word },
-        { from: "meaning", to: "reading", q: `What is the reading of "<span class="q-word">${meaning}</span>"?`, answer: reading },
-        { from: "reading", to: "word", q: `What is the kanji for <span class="q-word">${reading}</span>?`, answer: word },
-        { from: "reading", to: "meaning", q: `What is the meaning of <span class="q-word">${reading}</span>?`, answer: meaning },
+        { from: "word", to: "meaning", q: `What is the meaning of <br><span class="q-word">${word}</span>?`, answer: meaning },
+        { from: "word", to: "reading", q: `What is the reading of <br><span class="q-word">${word}</span>?`, answer: reading },
+        { from: "meaning", to: "word", q: `What is the kanji for <br><span class="q-word">${meaning}</span>?`, answer: word },
+        { from: "meaning", to: "reading", q: `What is the reading of <br><span class="q-word">${meaning}</span>?`, answer: reading },
+        { from: "reading", to: "word", q: `What is the kanji for <br><span class="q-word">${reading}</span>?`, answer: word },
+        { from: "reading", to: "meaning", q: `What is the meaning of <br><span class="q-word">${reading}</span>?`, answer: meaning },
       ];
       // randomize order
       for (let i = combos.length - 1; i > 0; i--) {
@@ -678,20 +679,20 @@
       if(state.mode === "word"){
         // Showing the word, asking reading or meaning
         prompt = target === "reading"
-          ? `What is the reading of <span class="q-word">${q.word}</span>?`
-          : `What is the meaning of <span class="q-word">${q.word}</span>?`;
+          ? `What is the reading of <br><span class="q-word">${q.word}</span>?`
+          : `What is the meaning of <br><span class="q-word">${q.word}</span>?`;
       }
       else if(state.mode === "meaning"){
         // Showing the meaning, asking word or reading
         prompt = target === "word"
-          ? `What is the kanji for "<span class="q-word">${q.meaning}</span>"?`
-          : `What is the reading of "<span class="q-word">${q.meaning}</span>"?`;
+          ? `What is the kanji for <br><span class="q-word">${q.meaning}</span>?`
+          : `What is the reading of <br><span class="q-word">${q.meaning}</span>?`;
       }
       else if(state.mode === "reading"){
         // Showing the reading, asking word or meaning
         prompt = target === "word"
-          ? `What is the kanji for <span class="q-word">${q.reading}</span>?`
-          : `What is the meaning of <span class="q-word">${q.reading}</span>?`;
+          ? `What is the kanji for <br><span class="q-word">${q.reading}</span>?`
+          : `What is the meaning of <br><span class="q-word">${q.reading}</span>?`;
       }
 
       els.qText.innerHTML = prompt;
