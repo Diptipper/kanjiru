@@ -321,7 +321,7 @@
 
   <script>
     // ========= Data Loading & Parsing =========
-    const available_levels = [5,41,42,4,31,32];
+    const available_levels = [5,41,42,4,3,31,32];
     const available_modes = ["word", "meaning", "reading","learning"];
     const questionOrder = {
       word:    ["reading", "meaning"],   // show word, ask reading → meaning
@@ -954,7 +954,7 @@
       const rangeRow = document.querySelector('.learning-range');
       rangeRow.style.display = 'none';
     }
-    
+
     updateLearningGroups();
 
     //els.level.addEventListener('change', (e)=>{ state.level = Number(e.target.value); storeSettings(); });
