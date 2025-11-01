@@ -26,6 +26,9 @@
       --brand-2: #f48fb1; /* soft gradient partner pink */
       --brand-3: #fff; /*lighter*/
       --brand-4: #fff7f9; /*lighter*/
+      --score-1: #b33b6b;
+      --score-2: #8a244d;
+      --pill-text: #fffafb;
       --q-word: #e86b95; /*highlighted word*/
       --good: #43cc99; /* fresh minty green */
       --bad: #eb7a8b; /* gentle rose red for incorrect */
@@ -38,6 +41,93 @@
       --radius: 20px;
       --font-main: 'Inter', system-ui, sans-serif;
       --font-mono: 'Courier New', monospace;
+    }
+
+    /* === DARK THEME === */
+    body.dark {
+      --bg: radial-gradient(1600px 1000px at 50% 20%, #0a0a3a 0%, #000010 70%);
+      --panel: rgba(15, 20, 40, 0.85);
+      --surface: rgba(20, 25, 50, 0.7);
+      --text: #e6e8ff;
+      --muted: #9aa3d5;
+      --brand: #4e6aff;
+      --brand-2: #1f3bff;
+      --brand-3: rgba(255,255,255,0.1);
+      --brand-4: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.1);
+      --score-1: #fff;
+      --score-2: #cfe2ff;
+      --pill-text: #e6e8ff;
+      --q-word: #4e6aff; /*highlighted word*/
+      --border-focused: #6b8aff;
+      --shadow: 0 6px 25px rgba(30,60,160,0.35);
+      --ring: 0 0 0 3px rgba(80,120,255,0.25);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* === THEME TOGGLE BUTTON (Animated) === */
+    .theme-toggle {
+      position: relative;
+      background: linear-gradient(180deg, var(--brand), var(--brand-2));
+      border: none;
+      color: white;
+      font-size: 20px;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s ease, box-shadow 0.4s ease, background 0.4s ease;
+      overflow: hidden;
+    }
+
+    /* subtle hover glow */
+    .theme-toggle:hover {
+      transform: scale(1.0);
+      box-shadow: 0 0 15px var(--brand);
+    }
+
+    /* pulse when clicked */
+    .theme-toggle:active {
+      transform: scale(0.9) rotate(20deg);
+      box-shadow: 0 0 20px rgba(255,255,255,0.6);
+    }
+
+    /* rotating icon swap */
+    .theme-toggle span {
+      display: block;
+      transition: transform 0.6s ease, opacity 0.4s ease;
+    }
+    .theme-toggle span.hide {
+      opacity: 0;
+      transform: rotate(90deg) scale(0.3);
+    }
+
+
+    /* === STAR BACKGROUND FOR DARK MODE === */
+    .stars {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: transparent;
+      overflow: hidden;
+      z-index: -1;
+      pointer-events: none;
+    }
+    .star {
+      position: absolute;
+      width: 2px; height: 2px;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 3s infinite ease-in-out;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.8; transform: scale(1); }
+      50% { opacity: 0.2; transform: scale(0.5); }
     }
 
     
@@ -159,6 +249,19 @@
       opacity: 0;
     }
 
+    /* === Hide quiz panel fully when inactive === */
+    /* Hide the entire quiz panel until we need it */
+    .quiz-panel {
+      display: none;
+    }
+
+    /* Show it normally (border & shadow come from .panel) */
+    .quiz-panel.active {
+      display: block;
+    }
+
+
+
     .q-word {
       font-weight: 800;
       color: var(--q-word); /* teal accent or choose brand */
@@ -226,7 +329,7 @@
     }
     .quiz.active{ display:block }
     .q-top{ display:flex; align-items:center; justify-content:space-between; gap:10px }
-    .pill{ font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); color:var(--surface); background:var(--brand-2); }
+    .pill{ font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); color:var(--pill-text); background:var(--brand-2); }
 
     .progress{ width:100%; height:10px; background:var(--surface); border:1px solid var(--border); border-radius:999px; margin:12px 0 18px; overflow:hidden }
     .bar{ height:100%; width:0%; background: linear-gradient(90deg, var(--brand), var(--brand-2)); transition: width .35s ease }
@@ -255,7 +358,7 @@
     .results{ display:none; padding:22px }
     .results.active{ display:block }
     .score{
-      font-size:48px; font-weight:800; line-height:1; background: linear-gradient(180deg, #fff, #cfe2ff); -webkit-background-clip:text; color:transparent;
+      font-size:48px; font-weight:800; line-height:1; background: linear-gradient(180deg, var(--score-1), var(--score-2)); -webkit-background-clip:text; color:transparent;
     }
     .result-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:16px }
     @media (max-width: 700px){ .result-grid{ grid-template-columns: 1fr } }
@@ -301,11 +404,14 @@
           <div class="muted">JLPT practice - <i>by Diptip</i></div>
         </div>
       </div>
+      <button id="themeToggle" class="theme-toggle">
+        <span id="themeIcon">🌙</span>
+      </button>
     </header>
 
     <section class="panel card setup-panel">
         <div class="title">Setup</div>
-        <div class="muted">Pick a level, mode, and how many questions you want. Press <b>Start</b>.</div>
+        <!--<div class="muted">Pick a level, mode, and how many questions you want. Press <b>Start</b>.</div>-->
 
         <div class="controls">
           <div class="row">
@@ -692,6 +798,7 @@
         const chosen = state.learningGroups[groupIndex] || [];
         if (!chosen.length) { alert("No words in that group!"); return; }
 
+        document.querySelector('.quiz-panel').classList.add('active');
         els.results.classList.remove('active');
         els.quiz.classList.add('active');
 
@@ -706,6 +813,7 @@
         renderLearningWordIntro();
         return;
       }
+      document.querySelector('.quiz-panel').classList.add('active');
 
 
 
@@ -943,25 +1051,51 @@
     }
 
 
-    function finish(){
+    function finish() {
+      // Hide quiz, show results
       els.quiz.classList.remove('active');
       els.results.classList.add('active');
 
-      const totalWords = state.set.length;
-      const correctWords = state.correct;  // already counted per word-pair
+      let totalWords, correctWords;
+
+      // ✅ Study mode = score shows completeness
+      if (state.mode === 'learning' || state.learning) {
+        totalWords = state.learning?.group?.length || 0;
+        correctWords = totalWords; // 100% when completed
+      } else {
+        // Normal quiz modes
+        totalWords = state.set.length;
+        correctWords = state.correct;
+      }
+
       const pct = Math.round((correctWords / Math.max(1, totalWords)) * 100);
 
       els.score.textContent = `${pct}%`;
+      // Format mode (capitalize first letter)
+      const modeLabel = state.mode.charAt(0).toUpperCase() + state.mode.slice(1);
+
+      // Format level (add dot if more than 1 digit)
+      let levelLabel = String(state.level);
+      if (levelLabel.length > 1) {
+        levelLabel = levelLabel[0] + "." + levelLabel.slice(1);
+      }
+
       els.breakdown.innerHTML = `
-        <b>${correctWords}</b> correct out of <b>${totalWords}</b><br>
-        <span class="muted">Mode: ${state.mode.toUpperCase()} · Level: N${state.level}</span>
+        <b>${correctWords}</b> completed out of <b>${totalWords}</b><br>
+        <span class="muted">Mode: ${modeLabel} · Level: N${levelLabel}</span>
       `;
 
+
       const wrong = totalWords - correctWords;
-      els.summary.innerHTML = wrong
-        ? `You missed <b>${wrong}</b>. Click <b>Review mistakes</b> to cycle through them.`
-        : `✨ Nice! Flawless round. Try a different mode or level.`;
+      els.summary.innerHTML =
+        state.mode === 'learning' || state.learning
+          ? `✨ Study session complete! You’ve reviewed <b>${totalWords}</b> words.`
+          : wrong
+            ? `You missed <b>${wrong}</b>. Click <b>Review mistakes</b> to cycle through them.`
+            : `✨ Nice! Flawless round. Try a different mode or level.`;
     }
+
+
 
 
     function reset(){
@@ -980,6 +1114,7 @@
       els.feedback.textContent = '';
       els.counter.textContent = '0 / 0';
       els.bar.style.width = '0%';
+      document.querySelector('.quiz-panel').classList.remove('active');
     }
 
 
@@ -1120,6 +1255,50 @@
         });
       }
     });
+
+    // === DARK MODE TOGGLE with Animation ===
+const toggle = document.getElementById("themeToggle");
+const icon = document.getElementById("themeIcon");
+
+toggle.addEventListener("click", () => {
+  const isDark = document.body.classList.toggle("dark");
+
+  // Animate icon switch
+  icon.classList.add("hide");
+  setTimeout(() => {
+    icon.textContent = isDark ? "☀️" : "🌙";
+    icon.classList.remove("hide");
+  }, 300);
+
+  // Background effect switch
+  if (isDark) {
+    document.querySelector(".sakura-container")?.remove();
+    createStars();
+  } else {
+    document.querySelector(".stars")?.remove();
+    createSakura();
+  }
+});
+
+// initial setup
+function createSakura() {
+  document.dispatchEvent(new Event("DOMContentLoaded"));
+}
+function createStars() {
+  const stars = document.createElement("div");
+  stars.className = "stars";
+  document.body.appendChild(stars);
+  for (let i = 0; i < 150; i++) {
+    const star = document.createElement("div");
+    star.className = "star";
+    star.style.left = Math.random() * 100 + "%";
+    star.style.top = Math.random() * 100 + "%";
+    star.style.animationDelay = Math.random() * 3 + "s";
+    stars.appendChild(star);
+  }
+}
+
+
   </script>
 </body>
 </html>
