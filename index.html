@@ -15,24 +15,102 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    /* === THEME SETTINGS === */
     :root {
-      --bg: #140c1c;
-      --panel: rgba(180,140,255,0.08);
-      --muted: #c8b8e0;
-      --text: #f5f0ff;
-      --brand: #b388ff;
-      --brand-2: #7c5cff;
-      --good: #9affc0;
-      --bad: #ff91a4;
-      --shadow: 0 8px 25px rgba(0,0,0,.3);
-      --radius: 22px;
-      --ring: 0 0 0 3px rgba(180,140,255,.25);
+      --bg: #fff7f9; /* soft sakura blush background */
+      --panel: #ffeef3; /* petal pink panel */
+      --surface: #fffafb; /* lighter surface layer */
+      --text: #8a244d; /* dark cherry-brown text */
+      --muted: #cc6c89; /* muted rose text */
+      --brand: #f6a5c0; /* cherry blossom main pink */
+      --brand-2: #f48fb1; /* soft gradient partner pink */
+      --brand-3: #fff; /*lighter*/
+      --brand-4: #fff7f9; /*lighter*/
+      --q-word: #e86b95; /*highlighted word*/
+      --good: #43cc99; /* fresh minty green */
+      --bad: #eb7a8b; /* gentle rose red for incorrect */
+      --border: #fcd5e0; /* sakura border edge */
+      --border-focused: #f48fb1; /* focused pink edge */
+      --shadow: 0 6px 25px rgba(240,150,180,0.25);
+      --ring: 0 0 0 3px rgba(244,143,177,0.25);
+      --bg-correct: rgba(174, 231, 191, .1);
+      --bg-incorrect: rgba(255, 182, 193, .12);
+      --radius: 20px;
+      --font-main: 'Inter', system-ui, sans-serif;
+      --font-mono: 'Courier New', monospace;
     }
+
+    
+    /* === FALLING SAKURA PETALS EFFECT (60° ANGLE) === */
+    .sakura-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      overflow: hidden;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .petal {
+      position: absolute;
+      top: -10px;
+      width: 12px; height: 10px;
+      background: radial-gradient(circle at 30% 30%, #fcdde6 0%, #f7b6c3 60%, #f48fb1 100%);
+      border-radius: 50% 70% 50% 70% / 60% 50% 70% 50%;
+      opacity: 0.9;
+      transform: rotate(0deg);
+      animation: fall 10s linear forwards;
+    }
+
+    @keyframes fall {
+      0% {
+        transform: translate(0, -10px) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        /* Move diagonally down-right at 60° angle */
+        transform: translate(100vw, 110vh) rotate(720deg);
+        opacity: 0.8;
+      }
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-main);
+      background:
+        radial-gradient(1200px 800px at 20% -10%, rgba(124,92,255,.25), transparent 60%),
+        radial-gradient(1200px 800px at 90% 0%, rgba(45,212,191,.20), transparent 65%),
+        var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,.03), transparent 60%), var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .btn,
+    input,
+    select,
+    .choice,
+    .mini,
+    .pool-item {
+      border-radius: var(--radius);
+    }
+
+    .kbd {
+      font-family: var(--font-mono);
+    }
+    /* === END THEME SETTINGS === */
 
     *{ box-sizing:border-box }
     html,body{ height:100% }
     body{
-      margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      margin:0;
       background: radial-gradient(1200px 800px at 20% -10%, rgba(124,92,255,.25), transparent 60%),
                   radial-gradient(1200px 800px at 90% 0%, rgba(45,212,191,.20), transparent 65%),
                   var(--bg);
@@ -67,7 +145,7 @@
       font-weight:800; color:white;
     }
     .panel{ background:linear-gradient(180deg, rgba(255,255,255,.03), transparent 60%), var(--panel);
-      border:1px solid rgba(255,255,255,.06); border-radius:var(--radius); box-shadow:var(--shadow);
+      border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow);
     }
     .setup-panel,
     .quiz-panel,
@@ -83,7 +161,7 @@
 
     .q-word {
       font-weight: 800;
-      color: var(--brand-2); /* teal accent or choose brand */
+      color: var(--q-word); /* teal accent or choose brand */
     }
 
     .q-subword {
@@ -99,10 +177,10 @@
     .controls .row{ display:flex; flex-direction:column; gap:8px }
     label{ font-size:14px; color:var(--muted) }
     input[type="number"], select{
-      width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.1);
-      background:#0e1320; color:var(--text); outline:none; transition:.2s border, .2s box-shadow;
+      width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--border);
+      background:var(--surface); color:var(--text); outline:none; transition:.2s border, .2s box-shadow;
     }
-    input[type="number"]:focus, select:focus{ border-color: rgba(124,92,255,.7); box-shadow: var(--ring) }
+    input[type="number"]:focus, select:focus{ border-color: var(--border); box-shadow: var(--ring) }
 
     .segmented {
       display: grid;
@@ -116,8 +194,8 @@
     .segmented button {
       padding: 10px 12px;
       border-radius: 8px;
-      border: 1px solid rgba(255,255,255,.1);
-      background: #0e1320;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--brand-3), var(--brand-4));
       color: var(--muted);
       font-weight: 600;
       cursor: pointer;
@@ -126,9 +204,7 @@
     }
 
     .segmented button.active {
-      background: linear-gradient(180deg, var(--brand), var(--brand-2));
-      color: var(--text);
-      border-color: rgba(124,92,255,.4);
+      background: linear-gradient(180deg, var(--brand), var(--brand-2)); color:white; box-shadow: var(--shadow);
     }
 
     .actions{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap }
@@ -140,19 +216,22 @@
     .btn.primary{
       background: linear-gradient(180deg, var(--brand), var(--brand-2)); color:white; box-shadow: var(--shadow);
     }
-    .btn.secondary{ background:#0e1320; color:var(--text); border:1px solid rgba(255,255,255,.12) }
+    .btn.secondary{
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--brand-3), var(--brand-4));
+      color: var(--muted); }
 
     .quiz{
       padding:24px 22px 26px; display:none;
     }
     .quiz.active{ display:block }
     .q-top{ display:flex; align-items:center; justify-content:space-between; gap:10px }
-    .pill{ font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); color:var(--muted) }
+    .pill{ font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); color:var(--surface); background:var(--brand-2); }
 
-    .progress{ width:100%; height:10px; background:#0e1320; border:1px solid rgba(255,255,255,.08); border-radius:999px; margin:12px 0 18px; overflow:hidden }
+    .progress{ width:100%; height:10px; background:var(--surface); border:1px solid var(--border); border-radius:999px; margin:12px 0 18px; overflow:hidden }
     .bar{ height:100%; width:0%; background: linear-gradient(90deg, var(--brand), var(--brand-2)); transition: width .35s ease }
 
-    .q-card{ padding:18px; border-radius:14px; border:1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.02) }
+    .q-card{ padding:18px; border-radius:14px; border:1px solid var(--border); background: rgba(255,255,255,.02) }
     .question{ font-size:20px; font-weight:800; margin:0 0 8px }
     .sub{ font-size:14px; color:var(--muted); margin-bottom:14px }
 
@@ -160,14 +239,14 @@
     @media (max-width: 700px){ .choices{ grid-template-columns: 1fr } }
 
     .choice{
-      padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:#0e1320;
+      padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:var(--surface);
       text-align:left; font-weight:600; color:var(--text); cursor:pointer; transition: .2s border, .2s transform, .2s background;
     }
-    .choice:hover{ border-color: rgba(124,92,255,.6) }
-    .choice.correct{ border-color: rgba(34,197,94,.9); background: rgba(34,197,94,.08) }
-    .choice.wrong{ border-color: rgba(239,68,68,.8); background: rgba(239,68,68,.08) }
+    .choice:hover{ border-color: var(--brand) }
+    .choice.correct{ border-color: rgba(34,197,94,.9); background: var(--bg-correct) }
+    .choice.wrong{ border-color: rgba(239,68,68,.8); background: var(--bg-incorrect) }
 
-    .feedback{ margin-top:8px; font-weight:700 }
+    .feedback{ margin-top:8px; font-weight:700; color: }
     .feedback.good{ color: var(--good) }
     .feedback.bad{ color: var(--bad) }
 
@@ -180,9 +259,9 @@
     }
     .result-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:16px }
     @media (max-width: 700px){ .result-grid{ grid-template-columns: 1fr } }
-    .mini{ padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:#0e1320 }
+    .mini{ padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:var(--surface) }
 
-    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; padding:2px 6px; border-radius:6px; border:1px solid rgba(255,255,255,.15); background:#0e1320; color:var(--muted) }
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; padding:2px 6px; border-radius:6px; border:1px solid rgba(255,255,255,.15); background:var(--surface); color:var(--muted) }
 
     .hint{ font-size:12px; color:var(--muted) }
 
@@ -1002,6 +1081,43 @@
         if(['1','2','3','4'].includes(e.key)){
           const idx = Number(e.key)-1; if(state.picked[state.idx] == null){ choose(idx); }
         } else if(e.key === 'Enter'){ if(!els.next.disabled) next(); }
+      }
+    });
+
+
+    // === Sakura Petals Animation ===
+    document.addEventListener("DOMContentLoaded", () => {
+      const container = document.createElement("div");
+      container.className = "sakura-container";
+      document.body.appendChild(container);
+
+      const numPetals = 25; // adjust number for more or fewer petals
+      for (let i = 0; i < numPetals; i++) {
+        const petal = document.createElement("div");
+        petal.className = "petal";
+
+        // randomize position and animation properties
+        const startX = Math.random() * window.innerWidth;
+        petal.style.left = `${startX}px`;
+        petal.style.animationDuration = 8 + Math.random() * 5 + "s";
+        petal.style.animationDelay = Math.random() * 10 + "s";
+        petal.style.opacity = 0.7 + Math.random() * 0.3;
+        petal.style.transform = `rotate(${Math.random() * 360}deg)`;
+
+        container.appendChild(petal);
+
+        // Restart animation for looping effect
+        petal.addEventListener("animationend", () => {
+          petal.style.left = (-0.5+Math.random()*1.5) * window.innerWidth + "px";
+          petal.style.animationDuration = 8 + Math.random() * 5 + "s";
+          petal.style.animationDelay = Math.random() * 5 + "s";
+          petal.style.transform = `rotate(${Math.random() * 360}deg)`;
+          petal.style.opacity = 0.7 + Math.random() * 0.3;
+          petal.style.top = "-10px";
+          petal.style.animationName = "none";
+          void petal.offsetWidth;
+          petal.style.animationName = "fall";
+        });
       }
     });
   </script>
